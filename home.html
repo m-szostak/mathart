@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="icon" href="MATH.svg" type="image/svg+xml">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Arte Generativa</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column; /* Altera para coluna para que o rodapé fique abaixo */
+            justify-content: space-between; /* Empurra o rodapé para baixo */
+            align-items: center; /* Centraliza o conteúdo principal */
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start; /* Alinha no topo os itens dentro do main-container */
+            flex-grow: 1; /* Permite que o main-container ocupe o espaço disponível */
+        }
+
+        .menu-panel {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            flex-shrink: 0;
+            width: 300px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-group label {
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .slider-value {
+            font-weight: normal;
+            float: right;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #art-canvas-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 400px;
+            padding: 15px;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Novo estilo para o rodapé da descrição */
+        #altTextFooter {
+            margin-top: 30px; /* Espaço entre o conteúdo principal e o rodapé */
+            width: 80%; /* Largura do rodapé */
+            max-width: 1000px; /* Largura máxima para o rodapé */
+            text-align: center;
+            padding: 15px 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .popup-overlay {
+    display: none; /* Esconde o popup por padrão */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Fundo semi-transparente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Garante que o popup fique acima de todo o conteúdo */
+}
+
+.popup-content {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    transform: scale(0.9); /* Para uma animação inicial */
+    opacity: 0;
+    transition: all 0.3s ease-out;
+}
+
+.popup-overlay.active .popup-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.popup-content h2 { /* Se você decidir adicionar um h2 depois */
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.popup-content p { /* Se você decidir adicionar um p depois */
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.popup-content button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease;
+}
+
+.popup-content button:hover {
+    background-color: #0056b3;
+}
+    </style>
+</head>
+<body>
+    <div id="welcomePopup" class="popup-overlay">
+        <div class="popup-content">
+            <img src="Bem-vindo(a) ao Gerador de Arte Generativa! Este site foi carinhosamente elaborado como um projeto acadêmico para a disciplina de Produção Multimídia, ministrada pela Professora Giselle Quaesner, .png" alt="Descrição da imagem do popup" style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
+            <button id="closePopup">Fechar</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        </div>
+    <div class="main-container">
+        <div class="menu-panel">
+            <h1>Math Art</h1>
+            <div class="slider-group">
+                <label for="seedInput" title="Texto ou número que define o ponto de partida para a geração aleatória de parâmetros e da arte. A mesma seed sempre gera a mesma arte.">Seed:</label>
+                <input type="text" id="seedInput" placeholder="Deixe vazio para aleatório">
+            </div>
+
+            <div class="slider-group">
+                <label for="complexitySlider" title="Controla o número de elementos desenhados na arte. Valores maiores geram mais detalhes.">Complexidade: <span id="complexityValue" class="slider-value">50</span></label>
+                <input type="range" id="complexitySlider" min="10" max="100" value="50">
+            </div>
+
+            <div class="slider-group">
+                <label for="colorVariationSlider" title="Ajusta a amplitude da variação de cor para cada elemento. Valores maiores criam cores mais diversas.">Variação de Cor: <span id="colorVariationValue" class="slider-value">50</span></label>
+                <input type="range" id="colorVariationSlider" min="0" max="100" value="50">
+            </div>
+
+            <div class="slider-group">
+                <label for="colorSchemeSlider" title="Define o esquema de cores da arte. 'Aleatório' usa cores sem regras; 'Monocromático' usa tons e matizes de uma única cor; 'Análogo' usa cores vizinhas para harmonia suave; 'Complementar' usa cores opostas para alto contraste; 'Triádico' usa três cores igualmente espaçadas para um contraste equilibrado; 'Tetrádico' usa dois pares de cores complementares para riqueza visual.">Esquema de Cores: <span id="colorSchemeValue" class="slider-value">Aleatório</span></label>
+                <input type="range" id="colorSchemeSlider" min="0" max="5" value="0">
+            </div>
+
+            <div class="slider-group">
+                <label for="shapeSizeSlider" title="Define o tamanho geral das formas desenhadas.">Tamanho da Forma: <span id="shapeSizeValue" class="slider-value">50</span></label>
+                <input type="range" id="shapeSizeSlider" min="10" max="100" value="50">
+            </div>
+
+            <div class="slider-group">
+                <label for="patternDensitySlider" title="Determina a probabilidade de um elemento ser desenhado. Valores maiores criam padrões mais densos.">Densidade do Padrão: <span id="patternDensityValue" class="slider-value">50</span></label>
+                <input type="range" id="patternDensitySlider" min="0" max="100" value="50">
+            </div>
+
+            <div class="slider-group">
+                <label for="initialRotationSlider" title="Define um ângulo base de rotação para todos os elementos, adicionado à rotação individual aleatória.">Rotação Inicial: <span id="initialRotationValue" class="slider-value">0</span></label>
+                <input type="range" id="initialRotationSlider" min="0" max="360" value="0">
+            </div>
+
+            <div class="slider-group">
+                <label for="strokeWeightSlider" title="Controla a espessura da linha de contorno das formas. Defina como 0 para remover o contorno.">Contorno (px): <span id="strokeWeightValue" class="slider-value">0</span></label>
+                <input type="range" id="strokeWeightSlider" min="0" max="10" value="0">
+            </div>
+
+            <div class="slider-group">
+                <label for="opacitySlider" title="Ajusta a transparência dos elementos. 0 é totalmente transparente, 255 é totalmente opaco.">Opacidade: <span id="opacityValue" class="slider-value">200</span></label>
+                <input type="range" id="opacitySlider" min="0" max="255" value="200">
+            </div>
+
+            <div class="slider-group">
+                <label for="formTypeSlider" title="Altera o tipo de forma geométrica principal utilizada na arte (ex: Círculo, Quadrado, Triângulo).">Tipo de Forma: <span id="formTypeValue" class="slider-value">Círculo</span></label>
+                <input type="range" id="formTypeSlider" min="0" max="3" value="0">
+            </div>
+
+            <div class="slider-group">
+                <label for="animationModeSlider" title="Define o modo de animação da arte. 'Estático' não anima. 'Loop Contínuo' anima em loop. 'Mouse Reactivo' move a arte com o mouse, parando a animação de loop.">Modo de Animação: <span id="animationModeValue" class="slider-value">Estático</span></label>
+                <input type="range" id="animationModeSlider" min="0" max="2" value="0">
+            </div>
+
+            <button id="generateButton">Gerar Nova Arte</button>
+            <button id="saveButton">Salvar Arte</button>
+        </div>
+
+        <div id="art-canvas-container">
+            </div>
+    </div>
+
+    <div id="altTextFooter">
+        <span id="altTextDisplay" aria-live="polite" aria-atomic="true"></span>
+    </div>
+
+    <script>
+
+        // Lógica para o Popup de Boas-Vindas
+const welcomePopup = document.getElementById('welcomePopup');
+const closePopupButton = document.getElementById('closePopup');
+
+// Função para mostrar o popup
+function showPopup() {
+    welcomePopup.style.display = 'flex'; // Exibe o overlay
+    setTimeout(() => {
+        welcomePopup.classList.add('active'); // Adiciona a classe para animação
+    }, 10); // Pequeno atraso para a transição funcionar
+}
+
+// Função para fechar o popup
+function closePopup() {
+    welcomePopup.classList.remove('active'); // Remove a classe de animação
+    setTimeout(() => {
+        welcomePopup.style.display = 'none'; // Esconde o overlay após a transição
+    }, 300); // Deve ser igual ou maior que a duração da transição CSS
+}
+
+// Mostra o popup quando a página é carregada
+window.addEventListener('load', showPopup);
+
+// Fecha o popup quando o botão é clicado
+closePopupButton.addEventListener('click', closePopup);
+
+// Opcional: Fecha o popup ao clicar fora dele
+welcomePopup.addEventListener('click', (event) => {
+    if (event.target === welcomePopup) {
+        closePopup();
+    }
+});
+
+        // Obtenha os elementos DOM
+        const seedInput = document.getElementById('seedInput');
+        const generateButton = document.getElementById('generateButton');
+        const saveButton = document.getElementById('saveButton');
+        const altTextDisplay = document.getElementById('altTextDisplay');
+
+        // Mapeamento dos tipos de forma para o slider 'formTypeSlider'
+        const formTypes = ["Círculo", "Quadrado", "Triângulo", "Linha"];
+        // Mapeamento dos esquemas de cores
+        const colorSchemes = ["Aleatório", "Monocromático", "Análogo", "Complementar", "Triádico", "Tetrádico (Retângulo)"];
+        // Mapeamento dos modos de animação
+        const animationModes = ["Estático", "Loop Contínuo", "Mouse Reativo"];
+
+
+        // Objeto com as descrições detalhadas dos parâmetros para o alt text
+        const parameterDescriptions = {
+            complexity: "Controla o número de elementos desenhados, onde valores maiores resultam em mais detalhes visuais.",
+            colorVariation: "Ajusta a amplitude da variação de cor para cada elemento, com valores maiores gerando cores mais diversas e vibrantes.",
+            shapeSize: "Define o tamanho geral das formas desenhadas na composição.",
+            patternDensity: "Determina a probabilidade de um elemento ser desenhado em uma posição, com valores maiores criando padrões mais densos e preenchidos.",
+            initialRotation: "Define um ângulo base de rotação para todos os elementos, adicionado à rotação individual aleatória de cada forma, impactando a orientação geral do padrão.",
+            strokeWeight: "Controla a espessura da linha de contorno das formas, em pixels. Um valor de 0 significa que não há contorno, resultando em formas sólidas.",
+            opacity: "Ajusta a transparência dos elementos, variando de 0 (totalmente transparente) a 255 (totalmente opaco).",
+            formType: (value) => `O tipo de forma geométrica principal utilizada é ${formTypes[value]}, influenciando a geometria básica dos elementos visuais.`,
+            colorScheme: (value) => `O esquema de cores é ${colorSchemes[value]}, definindo a harmonia e o contraste da paleta.`,
+            animationMode: (value) => `O modo de animação da arte é '${animationModes[value]}', o que significa que ${value === 0 ? 'a arte permanece estática' : (value === 1 ? 'a arte anima em um loop contínuo' : 'a arte reage ao movimento do mouse')}.`
+        };
+
+        // Referências aos sliders e seus spans de valor
+        const sliders = [
+            { id: 'complexitySlider', name: 'Complexidade', valueSpan: 'complexityValue' },
+            { id: 'colorVariationSlider', name: 'Variação de Cor', valueSpan: 'colorVariationValue' },
+            { id: 'colorSchemeSlider', name: 'Esquema de Cores', valueSpan: 'colorSchemeValue', customValue: (val) => colorSchemes[val] },
+            { id: 'shapeSizeSlider', name: 'Tamanho da Forma', valueSpan: 'shapeSizeValue' },
+            { id: 'patternDensitySlider', name: 'Densidade do Padrão', valueSpan: 'patternDensityValue' },
+            { id: 'initialRotationSlider', name: 'Rotação Inicial', valueSpan: 'initialRotationValue' },
+            { id: 'strokeWeightSlider', name: 'Contorno', valueSpan: 'strokeWeightValue' },
+            { id: 'opacitySlider', name: 'Opacidade', valueSpan: 'opacityValue' },
+            { id: 'formTypeSlider', name: 'Tipo de Forma', valueSpan: 'formTypeValue', customValue: (val) => formTypes[val] },
+            { id: 'animationModeSlider', name: 'Modo de Animação', valueSpan: 'animationModeValue', customValue: (val) => animationModes[val] } // NOVO SLIDER
+        ];
+
+        // Mapeia os elementos do DOM para os sliders e seus valores
+        const sliderElements = sliders.map(s => ({
+            slider: document.getElementById(s.id),
+            valueSpan: document.getElementById(s.valueSpan),
+            customValue: s.customValue,
+            name: s.name
+        }));
+
+        // Função para atualizar o valor exibido ao lado do slider
+        function updateSliderValue(slider, valueSpan, customValueFormatter) {
+            if (customValueFormatter) {
+                valueSpan.textContent = customValueFormatter(slider.value);
+            } else {
+                valueSpan.textContent = slider.value;
+            }
+        }
+
+        // Função para gerar um hash numérico a partir de uma string
+        function stringToHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // Converte para 32bit integer
+            }
+            return Math.abs(hash); // Garante que seja positivo
+        }
+
+        // Função para um gerador de números pseudo-aleatórios (PRNG)
+        function mulberry32(seed) {
+            let a = seed;
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        let myP5;
+        let currentPrng;
+        let artGenerated = false; // Flag para saber se uma arte já foi gerada
+
+        let updatingSeedFromSliders = false;
+
+        // Armazena as propriedades estáticas de cada forma para reusá-las na animação
+        // Isso garante que a animação não "regenere" as formas, mas as mova.
+        let shapeProperties = [];
+
+        function generateSeedFromParameters() {
+            let combinedString = seedInput.value.trim();
+
+            sliderElements.forEach(({ slider }) => {
+                combinedString += '_' + slider.id + '-' + slider.value;
+            });
+
+            return stringToHash(combinedString).toString();
+        }
+
+        function generateArt(fromSeedInput = true) {
+            updatingSeedFromSliders = true;
+
+            let currentSeed = seedInput.value.trim();
+            if (fromSeedInput && currentSeed === '') {
+                currentSeed = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                seedInput.value = currentSeed;
+            }
+
+            const numericSeed = stringToHash(currentSeed);
+            currentPrng = mulberry32(numericSeed);
+
+            if (fromSeedInput) {
+                sliderElements.forEach(({ slider, valueSpan, customValue }) => {
+                    const min = parseInt(slider.min);
+                    const max = parseInt(slider.max);
+                    slider.value = Math.floor(currentPrng() * (max - min + 1)) + min;
+                    updateSliderValue(slider, valueSpan, customValue);
+                });
+            } else {
+                seedInput.value = generateSeedFromParameters();
+            }
+
+            const params = {
+                seed: seedInput.value,
+                complexity: parseInt(document.getElementById('complexitySlider').value),
+                colorVariation: parseInt(document.getElementById('colorVariationSlider').value),
+                colorScheme: parseInt(document.getElementById('colorSchemeSlider').value),
+                shapeSize: parseInt(document.getElementById('shapeSizeSlider').value),
+                patternDensity: parseInt(document.getElementById('patternDensitySlider').value),
+                initialRotation: parseInt(document.getElementById('initialRotationSlider').value),
+                strokeWeight: parseInt(document.getElementById('strokeWeightSlider').value),
+                opacity: parseInt(document.getElementById('opacitySlider').value),
+                formType: parseInt(document.getElementById('formTypeSlider').value),
+                animationMode: parseInt(document.getElementById('animationModeSlider').value) // NOVO PARÂMETRO
+            };
+
+            // --- Geração do Alt Text mais detalhado ---
+            let altText = `Arte generativa abstrata com a seed '${params.seed}'. `;
+            altText += `${parameterDescriptions.formType(params.formType)}. `;
+            altText += `${parameterDescriptions.colorScheme(params.colorScheme)}. `;
+            altText += `${parameterDescriptions.animationMode(params.animationMode)}. `; // Adiciona a descrição do modo de animação
+            altText += `${parameterDescriptions.complexity} A complexidade atual é ${params.complexity} (em uma escala de 10 a 100). `;
+            altText += `${parameterDescriptions.colorVariation} O nível de variação é ${params.colorVariation} (em uma escala de 0 a 100). `;
+            altText += `${parameterDescriptions.shapeSize} O tamanho médio das formas é ${params.shapeSize} (em uma escala de 10 a 100). `;
+            altText += `${parameterDescriptions.patternDensity} A densidade visual é de ${params.patternDensity}% (em uma escala de 0 a 100). `;
+            altText += `${parameterDescriptions.initialRotation} A rotação base é de ${params.initialRotation} graus. `;
+            altText += `${parameterDescriptions.strokeWeight} Atualmente, o contorno tem ${params.strokeWeight} pixels de espessura. `;
+            altText += `${parameterDescriptions.opacity} A opacidade das formas é de ${Math.round((params.opacity / 255) * 100)}%. `;
+
+            altTextDisplay.textContent = `Descrição da imagem: ${altText.trim()}`;
+
+            if (myP5) {
+                myP5.remove();
+            }
+
+            myP5 = new p5(s => {
+                let sketchSeedValue;
+                let baseHue;
+                let secondaryHue1, secondaryHue2, secondaryHue3;
+
+                // Armazena as propriedades estáticas de cada forma
+                // Isso será preenchido no setup e usado no draw para animação
+                shapeProperties = [];
+
+                s.setup = () => {
+                    const canvasContainer = document.getElementById('art-canvas-container');
+                    const canvasWidth = canvasContainer.offsetWidth * 0.95;
+                    const canvasHeight = canvasContainer.offsetHeight * 0.95;
+                    const minDim = Math.min(canvasWidth, canvasHeight);
+                    const canvas = s.createCanvas(minDim, minDim);
+                    canvas.parent('art-canvas-container');
+                    canvas.attribute('aria-hidden', 'true');
+
+                    sketchSeedValue = stringToHash(params.seed);
+                    s.randomSeed(sketchSeedValue); // Semente para geração inicial de propriedades
+
+                    s.colorMode(s.HSB, 360, 100, 100, 255);
+
+                    // Define as cores base uma vez por geração
+                    baseHue = s.random(360);
+                    if (params.colorScheme === 5) { // Tetrádico
+                        secondaryHue1 = (baseHue + s.random(60, 120)) % 360;
+                        secondaryHue2 = (baseHue + 180) % 360;
+                        secondaryHue3 = (secondaryHue1 + 180) % 360;
+                    }
+
+                    // Gera e armazena as propriedades base das formas UMA VEZ no setup
+                    for (let i = 0; i < params.complexity * 5; i++) {
+                        let x = s.random(s.width);
+                        let y = s.random(s.height);
+                        let size = s.map(params.shapeSize, 10, 100, 5, 80);
+                        let baseRotation = s.random(360) + params.initialRotation;
+
+                        let hue, saturation, brightness;
+                        let varAmount = s.map(params.colorVariation, 0, 100, 0, 50);
+                        let varAmountS = s.map(params.colorVariation, 0, 100, 0, 20);
+
+                        switch (params.colorScheme) {
+                            case 0: // Aleatório
+                                hue = s.random(360);
+                                saturation = s.random(50, 100);
+                                brightness = s.random(50, 100);
+                                break;
+                            case 1: // Monocromático
+                                hue = baseHue;
+                                saturation = s.constrain(s.random(30, 90) + s.random(-varAmountS, varAmountS), 0, 100);
+                                brightness = s.constrain(s.random(40, 100) + s.random(-varAmountS, varAmountS), 0, 100);
+                                break;
+                            case 2: // Análogo
+                                let offsetAnalog = s.random([-30, 0, 30]);
+                                let analogousHue = (baseHue + offsetAnalog + 360) % 360;
+                                hue = s.constrain(analogousHue + s.random(-varAmount, varAmount), 0, 360);
+                                saturation = s.random(60, 90);
+                                brightness = s.random(70, 100);
+                                break;
+                            case 3: // Complementar
+                                let currentHueComp = (s.random() < 0.5) ? baseHue : (baseHue + 180) % 360;
+                                hue = s.constrain(currentHueComp + s.random(-varAmount, varAmount), 0, 360);
+                                saturation = s.random(70, 100);
+                                brightness = s.random(60, 90);
+                                break;
+                            case 4: // Triádico
+                                let triadHue = s.random([baseHue, (baseHue + 120) % 360, (baseHue + 240) % 360]);
+                                hue = s.constrain(triadHue + s.random(-varAmount, varAmount), 0, 360);
+                                saturation = s.random(60, 95);
+                                brightness = s.random(60, 95);
+                                break;
+                            case 5: // Tetrádico (Retângulo)
+                                let tetradHues = [baseHue, secondaryHue1, secondaryHue2, secondaryHue3];
+                                let currentTetradHue = s.random(tetradHues);
+                                hue = s.constrain(currentTetradHue + s.random(-varAmount, varAmount), 0, 360);
+                                saturation = s.random(65, 100);
+                                brightness = s.random(55, 90);
+                                break;
+                        }
+
+                        shapeProperties.push({
+                            x: x,
+                            y: y,
+                            size: size,
+                            baseRotation: baseRotation,
+                            hue: hue,
+                            saturation: saturation,
+                            brightness: brightness,
+                            drawShape: s.random(100) < params.patternDensity,
+                            type: params.formType
+                        });
+                    }
+
+                    // Define o modo de loop com base no slider de animação
+                    if (params.animationMode === 0) { // Estático
+                        s.noLoop();
+                    } else { // Loop Contínuo ou Mouse Reativo
+                        s.loop(); // Começa o loop, mas draw() pode ser controlado pelo mouseMoved
+                    }
+                    artGenerated = true; // Marca que a arte foi gerada
+                    s.redraw(); // Desenha o primeiro frame
+                };
+
+                s.draw = () => {
+                    if (!artGenerated) return; // Não desenha se a arte ainda não foi gerada no setup
+
+                    s.background(240); // Limpa o fundo a cada frame
+
+                    // Ajusta o loop do p5.js com base no modo de animação
+                    if (params.animationMode === 0) { // Estático
+                        s.noLoop();
+                    } else if (params.animationMode === 2) { // Mouse Reativo
+                        s.noLoop(); // Para o loop contínuo
+                    } else { // Loop Contínuo
+                        s.loop();
+                    }
+
+                    // Variáveis de animação (apenas para Loop Contínuo)
+                    let animationOffsetX = 0;
+                    let animationOffsetY = 0;
+                    let pulseFactor = 0;
+                    let continuousRotation = 0;
+
+                    if (params.animationMode === 1) { // Apenas se for Loop Contínuo
+                        animationOffsetX = s.sin(s.frameCount * 2) * 5;
+                        animationOffsetY = s.cos(s.frameCount * 2.5) * 5;
+                        pulseFactor = s.sin(s.frameCount * 5) * 0.1;
+                        continuousRotation = s.frameCount;
+                    }
+
+                    // Para cada forma armazenada
+                    shapeProperties.forEach(shape => {
+                        s.push();
+                        let currentX = shape.x;
+                        let currentY = shape.y;
+                        let currentSize = shape.size;
+                        let currentRotation = shape.baseRotation;
+
+                        if (params.animationMode === 1) { // Loop Contínuo
+                            currentX += animationOffsetX;
+                            currentY += animationOffsetY;
+                            currentSize *= (1 + pulseFactor);
+                            currentRotation += continuousRotation;
+                        } else if (params.animationMode === 2) { // Mouse Reativo
+                            // Faz os elementos se afastarem/aproximarem ou girarem em relação ao mouse
+                            let distToMouse = s.dist(shape.x, shape.y, s.mouseX, s.mouseY);
+                            let angleToMouse = s.atan2(s.mouseY - shape.y, s.mouseX - shape.x);
+
+                            // Exemplo: rotacionar mais perto do mouse, ou mover para longe
+                            let mouseInfluence = s.map(distToMouse, 0, s.width/2, 50, 0, true); // Inverte a influência
+                            currentRotation += s.map(s.mouseX, 0, s.width, -45, 45); // Rotação baseada na X do mouse
+                            currentX += s.cos(angleToMouse) * (mouseInfluence * 0.1);
+                            currentY += s.sin(angleToMouse) * (mouseInfluence * 0.1);
+                        }
+
+                        s.fill(shape.hue, shape.saturation, shape.brightness, params.opacity);
+                        if (params.strokeWeight > 0) {
+                            s.stroke(shape.hue, shape.saturation, shape.brightness, params.opacity);
+                            s.strokeWeight(params.strokeWeight);
+                        } else {
+                            s.noStroke();
+                        }
+
+                        s.translate(currentX, currentY);
+                        s.rotate(currentRotation);
+
+                        if (shape.drawShape) {
+                            switch (shape.type) {
+                                case 0: s.ellipse(0, 0, currentSize, currentSize); break;
+                                case 1: s.rect(0, 0, currentSize, currentSize); break;
+                                case 2:
+                                    let h = currentSize * (s.sqrt(3) / 2);
+                                    s.triangle(0, -h/2, -currentSize/2, h/2, currentSize/2, h/2);
+                                    break;
+                                case 3:
+                                    s.stroke(shape.hue, shape.saturation, shape.brightness, params.opacity);
+                                    s.strokeWeight(params.strokeWeight > 0 ? params.strokeWeight : 1);
+                                    s.line(-currentSize/2, 0, currentSize/2, 0);
+                                    break;
+                            }
+                        } else {
+                            s.ellipse(0, 0, currentSize * 0.7, currentSize * 0.7);
+                        }
+                        s.pop();
+                    });
+                };
+
+                s.mouseMoved = () => {
+                    // Redesenha apenas se o modo for "Mouse Reativo" e a arte já foi gerada
+                    if (params.animationMode === 2 && artGenerated) {
+                        s.redraw();
+                    }
+                };
+
+                s.windowResized = () => {
+                    const canvasContainer = document.getElementById('art-canvas-container');
+                    const canvasWidth = canvasContainer.offsetWidth * 0.95;
+                    const canvasHeight = canvasContainer.offsetHeight * 0.95;
+                    const minDim = Math.min(canvasWidth, canvasHeight);
+                    s.resizeCanvas(minDim, minDim);
+                    // Redesenha a arte ao redimensionar a janela, mantendo os parâmetros atuais
+                    generateArt(false);
+                };
+
+            }, 'art-canvas-container');
+
+            updatingSeedFromSliders = false;
+        }
+
+        // Event listeners
+        generateButton.addEventListener('click', () => generateArt(true));
+        seedInput.addEventListener('input', () => generateArt(true));
+
+        saveButton.addEventListener('click', () => {
+            if (myP5 && artGenerated) { // Verifica se a arte foi gerada antes de salvar
+                const filename = seedInput.value.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                myP5.saveCanvas(filename, 'png');
+            } else {
+                alert('Nenhuma arte para salvar. Gere uma arte primeiro!');
+            }
+        });
+
+        sliderElements.forEach(({ slider, valueSpan, customValue }) => {
+            slider.addEventListener('input', () => {
+                updateSliderValue(slider, valueSpan, customValue);
+                if (!updatingSeedFromSliders) {
+                    generateArt(false);
+                }
+            });
+        });
+
+        // Gera a arte inicial ao carregar a página
+        generateArt(true);
+    </script>
+</body>
+</html>
